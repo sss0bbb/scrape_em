@@ -11,9 +11,11 @@ scrape data from a hard to navigate site
 ## Usage
 
 `python scrape_em.py -u <url>`
+`python scrape_em.py -h` for full options
 
 ## To Do
 
-1. display progress
-3. give a csv output option
-4. locally cache results? json?
+1. clean up main
+2. display progress
+3. locally cache results? json?
+4. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls

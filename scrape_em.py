@@ -6,6 +6,8 @@
 #   emissions (in tracking number page)
 #save all to a csv at the end
 
+#recursive json to csv parsing adapted from https://github.com/vinay20045/json-to-csv
+
 import argparse
 import requests
 from bs4 import BeautifulSoup
@@ -14,10 +16,12 @@ import re
 import json
 import csv
 
+
 def parseArgs():
     parser = argparse.ArgumentParser(description = 'scrape a specific difficult site to make info more digestable')
     parser.add_argument('-u', action = 'store', dest = 'url', required = True)
     parser.add_argument('-m', action = 'store', dest = 'max_events', type = int, default = 0)
+    parser.add_argument('-c', action = 'store', dest = 'csv')
     return parser.parse_args()
 
 def getFields(th_tags, t_event = False):
@@ -72,6 +76,44 @@ def getEmissions(event, h3s):
                 event[s_name][u'Emission ' + str(e_count)] = e
                 e_count += 1
 
+def writeCSV(events, csvfile):
+    node = 'Event'
+    processed_data = []
+    header = []
+
+    for event in events:
+        reduced_item = {}
+        reduceItem(node, event, reduced_item)
+        header += reduced_item.keys()
+        processed_data.append(reduced_item)
+
+    header = list(set(header))
+    header.sort()
+
+    with open(csvfile, 'w') as f:
+        writer = csv.DictWriter(f, header, quoting=csv.QUOTE_ALL)
+        writer.writeheader()
+        for row in processed_data:
+            writer.writerow(row)
+
+#borrowed from https://github.com/vinay20045/json-to-csv
+#recursively parse list of dicts or dicts and prep for writing to a single line (like csv out)
+def reduceItem(key, value, reduced_item):
+    #Reduction Condition 1
+    if type(value) is list:
+        i=0
+        for sub_item in value:
+            #reduceItem(key+'_'+str(i), sub_item)
+            reduceItem(str(i), sub_item, reduced_item)
+            i=i+1
+    #Reduction Condition 2
+    elif type(value) is dict:
+        sub_keys = value.keys()
+        for sub_key in sub_keys:
+            reduceItem(key+'_'+str(sub_key), value[sub_key], reduced_item)
+    #Base Condition
+    else:
+        reduced_item[str(key)] = str(value)
 
 args = parseArgs()
 base_url = args.url
@@ -85,22 +127,19 @@ base_soup = BeautifulSoup(base_page.content, 'html.parser')
 #list(html.children)[3] has everything in the <body>
 #body = list(html.children)[3]
 
+
+#instead of this we might just want to search for the first table, then look for the th and tr tags in that first table only
 th_tags = base_soup.find_all('th')
 tr_tags = base_soup.find_all('tr')
 #dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
-
 print 'max_events is:', type(args.max_events), args.max_events
 if args.max_events > 0:
     tr_tags = tr_tags[1:args.max_events + 1]
 else:
     tr_tags = tr_tags[1:]
 
-#populate column names (keys) (fields) from table header values
-#event_fields = getFields(th_tags, t_event = True)
-
-#store results in list of dicts?
+#store results in list of dicts? cache locally as json?
 #popular alternative seems to be pandas dataframes
-
 events = getTable(th_tags, tr_tags, t_event = True)
 
 #iterate through events and add extra info (cause, emissions sources and contaminants)
@@ -112,10 +151,14 @@ for event in events:
     h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
     getEmissions(event, h3_tags)
 
+'''
 pprint(events)
 
+#exploring the usefulness of json storage for this project
+events_json = json.dumps(events)
+pprint(events_json)
+'''
 
-
-
+writeCSV(events, args.csv)
 
 
