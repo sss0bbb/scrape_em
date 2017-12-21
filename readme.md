@@ -15,6 +15,5 @@ scrape data from a hard to navigate site
 ## To Do
 
 1. display progress
-2. move max requests to an arg for dev
 3. give a csv output option
-4. locally cache results? using json?
+4. locally cache results? json?

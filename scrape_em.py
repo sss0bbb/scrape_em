@@ -15,8 +15,9 @@ import json
 import csv
 
 def parseArgs():
-    parser = argparse.ArgumentParser(description='scrape a specific difficult site to make info more digestable')
-    parser.add_argument('-u', action = "store", dest = 'url', required = True)
+    parser = argparse.ArgumentParser(description = 'scrape a specific difficult site to make info more digestable')
+    parser.add_argument('-u', action = 'store', dest = 'url', required = True)
+    parser.add_argument('-m', action = 'store', dest = 'max_events', type = int, default = 0)
     return parser.parse_args()
 
 def getFields(th_tags, t_event = False):
@@ -87,10 +88,15 @@ base_soup = BeautifulSoup(base_page.content, 'html.parser')
 th_tags = base_soup.find_all('th')
 tr_tags = base_soup.find_all('tr')
 #dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
-tr_tags = tr_tags[1:4]
+
+print 'max_events is:', type(args.max_events), args.max_events
+if args.max_events > 0:
+    tr_tags = tr_tags[1:args.max_events + 1]
+else:
+    tr_tags = tr_tags[1:]
 
 #populate column names (keys) (fields) from table header values
-event_fields = getFields(th_tags, t_event = True)
+#event_fields = getFields(th_tags, t_event = True)
 
 #store results in list of dicts?
 #popular alternative seems to be pandas dataframes
