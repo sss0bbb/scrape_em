@@ -16,7 +16,6 @@ Scrape data from a site that is difficult to use. This is written for a very spe
 
 ## To Do
 
-1. clean up main
-2. display progress
-3. locally cache results? json?
-4. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
+1. display progress
+2. locally cache results? json?
+3. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls

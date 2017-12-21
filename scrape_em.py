@@ -115,50 +115,54 @@ def reduceItem(key, value, reduced_item):
     else:
         reduced_item[str(key)] = str(value)
 
-args = parseArgs()
-base_url = args.url
 
-base_page = requests.get(base_url)
-base_soup = BeautifulSoup(base_page.content, 'html.parser')
+def main():
+    args = parseArgs()
+    base_url = args.url
 
-#list(soup.children)[3] has all the main content
-#html = list(soup.children)[3]
+    base_page = requests.get(base_url)
+    base_soup = BeautifulSoup(base_page.content, 'html.parser')
 
-#list(html.children)[3] has everything in the <body>
-#body = list(html.children)[3]
+    #list(soup.children)[3] has all the main content
+    #html = list(soup.children)[3]
+
+    #list(html.children)[3] has everything in the <body>
+    #body = list(html.children)[3]
 
 
-#instead of this we might just want to search for the first table, then look for the th and tr tags in that first table only
-th_tags = base_soup.find_all('th')
-tr_tags = base_soup.find_all('tr')
-#dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
-print 'max_events is:', type(args.max_events), args.max_events
-if args.max_events > 0:
-    tr_tags = tr_tags[1:args.max_events + 1]
-else:
-    tr_tags = tr_tags[1:]
+    #instead of this we might just want to search for the first table, then look for the th and tr tags in that first table only
+    th_tags = base_soup.find_all('th')
+    tr_tags = base_soup.find_all('tr')
+    #dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
+    print 'max_events is:', type(args.max_events), args.max_events
+    if args.max_events > 0:
+        tr_tags = tr_tags[1:args.max_events + 1]
+    else:
+        tr_tags = tr_tags[1:]
 
-#store results in list of dicts? cache locally as json?
-#popular alternative seems to be pandas dataframes
-events = getTable(th_tags, tr_tags, t_event = True)
+    #store results in list of dicts? cache locally as json?
+    #popular alternative seems to be pandas dataframes
+    events = getTable(th_tags, tr_tags, t_event = True)
 
-#iterate through events and add extra info (cause, emissions sources and contaminants)
-for event in events:
-    #print event['URL']
-    event_page = requests.get(event['URL'])
-    event_soup = BeautifulSoup(event_page.content, 'html.parser')
-    event[u'Cause'] = getCause(event_soup)
-    h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
-    getEmissions(event, h3_tags)
+    #iterate through events and add extra info (cause, emissions sources and contaminants)
+    for event in events:
+        #print event['URL']
+        event_page = requests.get(event['URL'])
+        event_soup = BeautifulSoup(event_page.content, 'html.parser')
+        event[u'Cause'] = getCause(event_soup)
+        h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
+        getEmissions(event, h3_tags)
 
-'''
-pprint(events)
+    '''
+    pprint(events)
 
-#exploring the usefulness of json storage for this project
-events_json = json.dumps(events)
-pprint(events_json)
-'''
+    #exploring the usefulness of json storage for this project
+    events_json = json.dumps(events)
+    pprint(events_json)
+    '''
 
-writeCSV(events, args.csv)
+    writeCSV(events, args.csv)
 
+if __name__== "__main__":
+    main()
 
