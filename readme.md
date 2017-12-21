@@ -1,6 +1,6 @@
-# scrape_em
+# scrape_em.py
 
-scrape data from a hard to navigate site
+Scrape data from a site that is difficult to use. This is written for a very specific purpose and will not work as a general solution.
 
 ## Dependencies
 
@@ -11,6 +11,7 @@ scrape data from a hard to navigate site
 ## Usage
 
 `python scrape_em.py -u <url>`
+
 `python scrape_em.py -h` for full options
 
 ## To Do
