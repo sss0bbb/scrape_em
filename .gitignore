@@ -1,4 +1,5 @@
 *.csv
+*.json
 config.py
 
 # Compiled source #
