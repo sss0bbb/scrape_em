@@ -125,14 +125,24 @@ def reduceItem(key, value, reduced_item):
         reduced_item[str(key)] = str(value)
 
 def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
+    #get file extension
+    csv_basename = csvfile
+    if csvfile.rfind('.') > 0:
+        csv_basename = csvfile[:csvfile.rfind('.')]
+
     if t_event:
+        csvfile = csv_basename + '_events.csv'
         #suggested
         #header = [u'TrackingNum', u'Regulated Entity Number', u'RNNum', u'City', u'County', u'Type', u'Event Begin', u'Event End', u'Basis', u'Cause', u'Action Taken', u'Estimation Method']
         header = [u'TrackingNum', u'Type', u'Status', u'Cause', u'Began', u'Ended', u'URL']
         #todo: compare header to ldicts[0] to make sure that the contents are the same even if they're in a different order
         #   ValueError thrown when header doesn't match - use try instead
     elif t_emissions:
+        csvfile = csv_basename + '_emissions.csv'
         header = [u'TrackingNum', u'Name', u'Fullname', u'Contaminant', u'Authorization', u'Limit', u'Amount Released']
+    #pprint(ldicts[0])
+    #print 'key differences:'
+    #print set(header) - set(ldicts[0])
     with open(csvfile, 'w') as f:
         writer = csv.DictWriter(f, header, quoting = csv.QUOTE_ALL)
         writer.writeheader()
@@ -165,8 +175,7 @@ def main():
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
     #store emissions in their own list of dicts
     for event in events:
-        pprint(event)
-        print event['URL']
+        #pprint(event)
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
         event[u'Cause'] = getCause(event_soup)
@@ -174,15 +183,15 @@ def main():
         getEmissions(event['TrackingNum'], h3_tags, emissions)
 
     '''
-    pprint(events)
-
     #exploring the usefulness of json storage for this project
     events_json = json.dumps(events)
     pprint(events_json)
     '''
 
+    #final output - either csv
     if args.csv:
         writeCSV(events, args.csv, t_event = True)
+        writeCSV(emissions, args.csv, t_emissions = True)
     else:
         print 'no CSV file given... printing first 3 events as a sample'
         pprint(events[:3])
