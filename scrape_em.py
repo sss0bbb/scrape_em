@@ -33,7 +33,7 @@ def getFields(th_tags, t_event = False):
         colnames.append(name)
     #ugly manual fix for non-ascii chars in main event field name only
     if t_event:
-        colnames[0] = u'TrackingNumber'
+        colnames[0] = u'TrackingNum'
     return colnames
 
 def getRow(td_tags, fields, t_event = False):
@@ -41,7 +41,7 @@ def getRow(td_tags, fields, t_event = False):
     row_dict = {}
     for td in td_tags:
         row_dict[fields[fieldnum]] = td.get_text().strip()
-        if fields[fieldnum] == 'TrackingNumber':
+        if fields[fieldnum] == 'TrackingNum':
             row_dict[u'URL'] = td.find('a', href = True)['href']
         fieldnum += 1
     return row_dict
@@ -60,23 +60,32 @@ def getCause(event_soup):
     cause = cause_header.parent.find_next('td').get_text()
     return cause
 
-def getEmissions(event, h3s):
+def getEmissions(tracknum, h3s, emissions):
+    #loop through emissions labeled as "Source" in h3 tags followed by tables of contaminants
+    #all storage should be in the emissions list of dicts
+    emission = {}
     for h3 in h3s:
-        s_fullname = h3.get_text()
-        s_colon = s_fullname.find(':')
-        s_name = s_fullname[:s_colon]
-        event[s_name] = {}
-        event[s_name][u'Fullname'] = s_fullname
         if h3.next_sibling.name == 'table':
+            s_fullname = h3.get_text()
+            s_colon = s_fullname.find(':')
+            s_name = s_fullname[:s_colon]
+            emission[u'TrackingNum'] = tracknum
+            #event[s_name] = {}
+            emission[u'Name'] = s_name
+            emission[u'Fullname'] = s_fullname
             emission_th_tags = h3.next_sibling.find_all('th')
             emission_tr_tags = h3.next_sibling.find_all('tr')[1:]
             emission_list = getTable(emission_th_tags, emission_tr_tags, t_emissions = True)
-            e_count = 1
+            #pprint(emission_list)
+            #e_count = 1
             for e in emission_list:
-                event[s_name][u'Emission ' + str(e_count)] = e
-                e_count += 1
+                emission.update(e)
+                #e_count += 1
+            pprint(emission)
+            emissions.append(emission)
 
-def writeCSV(events, csvfile):
+#will likely phase out this approach in favor of 2 csvs
+def writeRecursiveCSV(events, csvfile):
     node = 'Event'
     processed_data = []
     header = []
@@ -115,6 +124,20 @@ def reduceItem(key, value, reduced_item):
     else:
         reduced_item[str(key)] = str(value)
 
+def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
+    if t_event:
+        #suggested
+        #header = [u'TrackingNum', u'Regulated Entity Number', u'RNNum', u'City', u'County', u'Type', u'Event Begin', u'Event End', u'Basis', u'Cause', u'Action Taken', u'Estimation Method']
+        header = [u'TrackingNum', u'Type', u'Status', u'Cause', u'Began', u'Ended', u'URL']
+        #todo: compare header to ldicts[0] to make sure that the contents are the same even if they're in a different order
+        #   ValueError thrown when header doesn't match - use try instead
+    elif t_emissions:
+        header = [u'TrackingNum', u'Name', u'Fullname', u'Contaminant', u'Authorization', u'Limit', u'Amount Released']
+    with open(csvfile, 'w') as f:
+        writer = csv.DictWriter(f, header, quoting = csv.QUOTE_ALL)
+        writer.writeheader()
+        for row in ldicts:
+            writer.writerow(row)
 
 def main():
     args = parseArgs()
@@ -122,13 +145,6 @@ def main():
 
     base_page = requests.get(base_url)
     base_soup = BeautifulSoup(base_page.content, 'html.parser')
-
-    #list(soup.children)[3] has all the main content
-    #html = list(soup.children)[3]
-
-    #list(html.children)[3] has everything in the <body>
-    #body = list(html.children)[3]
-
 
     #instead of this we might just want to search for the first table, then look for the th and tr tags in that first table only
     th_tags = base_soup.find_all('th')
@@ -143,15 +159,19 @@ def main():
     #store results in list of dicts? cache locally as json?
     #popular alternative seems to be pandas dataframes
     events = getTable(th_tags, tr_tags, t_event = True)
+    #store emissions in their own list of dicts
+    emissions = []
 
-    #iterate through events and add extra info (cause, emissions sources and contaminants)
+    #iterate through events and grab extra info (cause, emissions sources and contaminants)
+    #store emissions in their own list of dicts
     for event in events:
-        #print event['URL']
+        pprint(event)
+        print event['URL']
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
         event[u'Cause'] = getCause(event_soup)
         h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
-        getEmissions(event, h3_tags)
+        getEmissions(event['TrackingNum'], h3_tags, emissions)
 
     '''
     pprint(events)
@@ -161,7 +181,11 @@ def main():
     pprint(events_json)
     '''
 
-    writeCSV(events, args.csv)
+    if args.csv:
+        writeCSV(events, args.csv, t_event = True)
+    else:
+        print 'no CSV file given... printing first 3 events as a sample'
+        pprint(events[:3])
 
 if __name__== "__main__":
     main()

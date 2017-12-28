@@ -19,3 +19,6 @@ Scrape data from a site that is difficult to use. This is written for a very spe
 1. display progress
 2. locally cache results? json?
 3. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
+4. split csv output into two files
+5. catch csv header vs dict key errors cleanly
+
