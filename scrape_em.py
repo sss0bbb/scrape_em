@@ -19,9 +19,10 @@ import csv
 
 def parseArgs():
     parser = argparse.ArgumentParser(description = 'scrape a specific difficult site to make info more digestable')
-    parser.add_argument('-u', action = 'store', dest = 'url', required = True)
-    parser.add_argument('-m', action = 'store', dest = 'max_events', type = int, default = 0)
-    parser.add_argument('-c', action = 'store', dest = 'csv')
+    parser.add_argument('-u', '--url', action = 'store', dest = 'url', required = True, help = 'required base url')
+    parser.add_argument('-m', '--max', action = 'store', dest = 'max_events', type = int, default = 0, help = 'great for limiting results for testing purposes')
+    parser.add_argument('-c', '--csv', action = 'store', dest = 'csv', help = 'specify csv file base name - 2 will get created with this name.')
+    parser.add_argument('-l', '--load', action = 'store', dest = 'json', help = 'specify json file to load previous results from and save new things to')
     return parser.parse_args()
 
 def getFields(th_tags, t_event = False):
@@ -175,14 +176,19 @@ def main():
     else:
         tr_tags = tr_tags[1:]
 
+
+
+    data = {}
+
+
     #store results in list of dicts? cache locally as json?
     #popular alternative seems to be pandas dataframes
-    events = getTable(th_tags, tr_tags, t_event = True)
+    data['events'] = getTable(th_tags, tr_tags, t_event = True)
     #store emissions in their own list of dicts
-    emissions = []
+    data['emissions'] = []
 
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
-    getAllEmissions(events, emissions)
+    getAllEmissions(data['events'], data['emissions'])
 
     '''
     #exploring the usefulness of json storage for this project
@@ -190,13 +196,24 @@ def main():
     pprint(events_json)
     '''
 
+#    if args.json:
+
+
+
+    #with open('event_data.json', 'r') as f:
+    #    data = json.load(f)
+
+    #with open('event_data.json', 'w') as f:
+    #    json.dump(data, f)
+
+
     #final output - either csv or a pprint example
     if args.csv:
-        writeCSV(events, args.csv, t_event = True)
-        writeCSV(emissions, args.csv, t_emissions = True)
+        writeCSV(data['events'], args.csv, t_event = True)
+        writeCSV(data['emissions'], args.csv, t_emissions = True)
     else:
         print 'no CSV file given... printing first 3 events as a sample'
-        pprint(events[:3])
+        pprint(data['events'][:3])
 
 if __name__== "__main__":
     main()
