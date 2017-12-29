@@ -60,7 +60,7 @@ def getCause(event_soup):
     cause = cause_header.parent.find_next('td').get_text()
     return cause
 
-def getEmissions(tracknum, h3s, emissions):
+def getEmission(tracknum, h3s, emissions):
     #loop through emissions labeled as "Source" in h3 tags followed by tables of contaminants
     #all storage should be in the emissions list of dicts
     emission = {}
@@ -83,6 +83,15 @@ def getEmissions(tracknum, h3s, emissions):
                 #e_count += 1
             pprint(emission)
             emissions.append(emission)
+
+def getAllEmissions(events, emissions):
+    for event in events:
+        #pprint(event)
+        event_page = requests.get(event['URL'])
+        event_soup = BeautifulSoup(event_page.content, 'html.parser')
+        event[u'Cause'] = getCause(event_soup)
+        h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
+        getEmission(event['TrackingNum'], h3_tags, emissions)
 
 #will likely phase out this approach in favor of 2 csvs
 def writeRecursiveCSV(events, csvfile):
@@ -173,14 +182,7 @@ def main():
     emissions = []
 
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
-    #store emissions in their own list of dicts
-    for event in events:
-        #pprint(event)
-        event_page = requests.get(event['URL'])
-        event_soup = BeautifulSoup(event_page.content, 'html.parser')
-        event[u'Cause'] = getCause(event_soup)
-        h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
-        getEmissions(event['TrackingNum'], h3_tags, emissions)
+    getAllEmissions(events, emissions)
 
     '''
     #exploring the usefulness of json storage for this project
@@ -188,7 +190,7 @@ def main():
     pprint(events_json)
     '''
 
-    #final output - either csv
+    #final output - either csv or a pprint example
     if args.csv:
         writeCSV(events, args.csv, t_event = True)
         writeCSV(emissions, args.csv, t_emissions = True)
