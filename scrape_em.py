@@ -94,52 +94,11 @@ def getAllEmissions(events, emissions):
         h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
         getEmission(event['TrackingNum'], h3_tags, emissions)
 
-#will likely phase out this approach in favor of 2 csvs
-def writeRecursiveCSV(events, csvfile):
-    node = 'Event'
-    processed_data = []
-    header = []
-
-    for event in events:
-        reduced_item = {}
-        reduceItem(node, event, reduced_item)
-        header += reduced_item.keys()
-        processed_data.append(reduced_item)
-
-    header = list(set(header))
-    header.sort()
-
-    with open(csvfile, 'w') as f:
-        writer = csv.DictWriter(f, header, quoting=csv.QUOTE_ALL)
-        writer.writeheader()
-        for row in processed_data:
-            writer.writerow(row)
-
-#borrowed from https://github.com/vinay20045/json-to-csv
-#recursively parse list of dicts or dicts and prep for writing to a single line (like csv out)
-def reduceItem(key, value, reduced_item):
-    #Reduction Condition 1
-    if type(value) is list:
-        i=0
-        for sub_item in value:
-            #reduceItem(key+'_'+str(i), sub_item)
-            reduceItem(str(i), sub_item, reduced_item)
-            i=i+1
-    #Reduction Condition 2
-    elif type(value) is dict:
-        sub_keys = value.keys()
-        for sub_key in sub_keys:
-            reduceItem(key+'_'+str(sub_key), value[sub_key], reduced_item)
-    #Base Condition
-    else:
-        reduced_item[str(key)] = str(value)
-
 def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
     #get file extension
     csv_basename = csvfile
     if csvfile.rfind('.') > 0:
         csv_basename = csvfile[:csvfile.rfind('.')]
-
     if t_event:
         csvfile = csv_basename + '_events.csv'
         #suggested
@@ -176,15 +135,31 @@ def main():
     else:
         tr_tags = tr_tags[1:]
 
-
-
+    #initialize main data storage, try to load cached data from json file, then get new stuff from the site
     data = {}
 
+    if args.json:
+        try:
+            with open(args.json, 'r') as f:
+                json_data = json.load(f)
+                data.update(json_data)
+        except IOError:
+            print 'json file', args.json, 'does not exist. starting with no cached data. will create json cache file and save data there.'
 
-    #store results in list of dicts? cache locally as json?
-    #popular alternative seems to be pandas dataframes
-    data['events'] = getTable(th_tags, tr_tags, t_event = True)
+
+    #store events in list of dicts
+    #get this full list no matter the cached event data? true time cost is getting emission data, not events
+    new_events = getTable(th_tags, tr_tags, t_event = True)
+
     #store emissions in their own list of dicts
+    #compare get latest 'Began' date in cached data and only try to grab events with more recent 'Began' dates?
+    #before each grab, check cached data tracking number to see if it already exists? could fix an incomplete cache issue
+
+    #find unique tracking numbers from events that don't exist in the loaded json data
+    #search for tracking numbers in emissions data
+    #   if emissinos data contains tracking number, do nothing
+    #   if there is no emissions data for a tracking number, download it normally
+    #keep it simple
     data['emissions'] = []
 
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
@@ -196,7 +171,6 @@ def main():
     pprint(events_json)
     '''
 
-#    if args.json:
 
 
 
