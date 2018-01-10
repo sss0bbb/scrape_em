@@ -1,13 +1,5 @@
 #!/usr/bin/env python
 
-#crawl through links on base url and save each:
-#   event ID (tracking number)
-#   cause (in tracking number page)
-#   emissions (in tracking number page)
-#save all to a csv at the end
-
-#recursive json to csv parsing adapted from https://github.com/vinay20045/json-to-csv
-
 import argparse
 import requests
 from bs4 import BeautifulSoup
@@ -170,6 +162,7 @@ def main():
     args = parseArgs()
     base_url = args.url
 
+    print '*** grabbing base url'
     base_page = requests.get(base_url)
     base_soup = BeautifulSoup(base_page.content, 'html.parser')
 
