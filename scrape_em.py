@@ -21,7 +21,7 @@ def parseArgs():
     parser = argparse.ArgumentParser(description = 'scrape a specific difficult site to make info more digestable')
     parser.add_argument('-u', '--url', action = 'store', dest = 'url', required = True, help = 'required base url')
     parser.add_argument('-m', '--max', action = 'store', dest = 'max_events', type = int, default = 0, help = 'great for limiting results for testing purposes')
-    parser.add_argument('-c', '--csv', action = 'store', dest = 'csv', help = 'specify csv file base name - 2 will get created with this name.')
+    parser.add_argument('-c', '--csv', action = 'store', dest = 'csv', help = 'specify csv file base name - two files will be created with this base name.')
     parser.add_argument('-l', '--load', action = 'store', dest = 'json', help = 'specify json file to load previous results from and save new things to')
     return parser.parse_args()
 
@@ -131,13 +131,33 @@ def getuniqueTNs(tnlist1, tnlist2):
             uniquetns.append(tn)
     return uniquetns
 
-def getUniqueNewEvents(de_tnlist, new_events):
+def getUniqueNewEvents(de_events, new_events):
     u_new_events = []
+    de_tnlist = getTNlist(de_events)
     ne_tnlist = getTNlist(new_events)
     for event in new_events:
         if event['TrackingNum'] not in de_tnlist:
             u_new_events.append(event)
     return u_new_events
+
+def openJsonFile(data, filename = False):
+    if filename:
+        try:
+            with open(filename, 'r') as f:
+                json_data = json.load(f)
+                data.update(json_data)
+            print 'loaded json cache successfully:', len(data['events']), 'events -', len(data['emissions']), 'emissions'
+        except IOError:
+            print 'json file \"', filename, '\" does not exist. starting with no cached data. will create json cache file and save data there.'
+            data['events'] = []
+            data['emissions'] = []
+
+def writeJsonFile(data, filename = False):
+    if filename:
+        print 'attempting to update json cache file'
+        with open(filename, 'w') as f:
+            json.dump(data, f)
+
 
 def main():
     args = parseArgs()
@@ -150,7 +170,7 @@ def main():
     th_tags = base_soup.find_all('th')
     tr_tags = base_soup.find_all('tr')
     #dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
-    print 'max_events is:', type(args.max_events), args.max_events
+    print 'max_events is:', args.max_events
     if args.max_events > 0:
         tr_tags = tr_tags[1:args.max_events + 1]
     else:
@@ -159,49 +179,41 @@ def main():
     #initialize main data storage, try to load cached data from json file, then get new stuff from the site
     data = {}
 
-    if args.json:
-        try:
-            with open(args.json, 'r') as f:
-                json_data = json.load(f)
-                data.update(json_data)
-        except IOError:
-            print 'json file', args.json, 'does not exist. starting with no cached data. will create json cache file and save data there.'
-
+    #try to open json file
+    openJsonFile(data, args.json)
 
     #store events in list of dicts
-    #get this full list no matter the cached event data? true time cost is getting emission data, not events
-    new_events = getTable(th_tags, tr_tags, t_event = True)
+    #get this full list no matter the cached event data. true time cost is getting emission data, not events
+    print 'grabbing all events from base url'
+    all_events = getTable(th_tags, tr_tags, t_event = True)
+
+    #find new events by tracking number that don't exist in the loaded json events data
+    print 'finding new events based on saved cache data'
+    new_events = getUniqueNewEvents(data['events'], all_events)
 
     #store emissions in their own list of dicts
-    #compare get latest 'Began' date in cached data and only try to grab events with more recent 'Began' dates?
-    #before each grab, check cached data tracking number to see if it already exists? could fix an incomplete cache issue
-
-    #find unique tracking numbers from events that don't exist in the loaded json data
-    #search for tracking numbers in emissions data
-    #   if emissinos data contains tracking number, do nothing
-    #   if there is no emissions data for a tracking number, download it normally
-    #keep it simple
-
     new_emissions = []
-
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
-    getAllEmissions(data['events'], new_emissions)
+    print 'grabbing new emissions data based on new events'
+    getAllEmissions(new_events, new_emissions)
 
+    #merge all new data into main stored data
+    data['events'] = data['events'] + new_events
+    data['emissions'] = data['emissions'] + new_emissions
 
-    #with open('event_data.json', 'r') as f:
-    #    data = json.load(f)
-
-    #with open('event_data.json', 'w') as f:
-    #    json.dump(data, f)
-
+    #write all data to json cache file
+    writeJsonFile(data, args.json)
 
     #final output - either csv or a pprint example
     if args.csv:
+        print 'writing all data to CSVs'
         writeCSV(data['events'], args.csv, t_event = True)
         writeCSV(data['emissions'], args.csv, t_emissions = True)
     else:
         print 'no CSV file given... printing first 3 events as a sample'
         pprint(data['events'][:3])
+
+    print 'DONE!'
 
 if __name__== "__main__":
     main()
