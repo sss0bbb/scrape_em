@@ -86,13 +86,16 @@ def getEmission(tracknum, h3s, emissions):
             emissions.append(emission)
 
 def getAllEmissions(events, emissions):
+    count = 1
     for event in events:
         #pprint(event)
+        print '*** grabbing', count, 'of', len(events)
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
         event[u'Cause'] = getCause(event_soup)
         h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
         getEmission(event['TrackingNum'], h3_tags, emissions)
+        count += 1
 
 def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
     #get file extension
@@ -146,15 +149,19 @@ def openJsonFile(data, filename = False):
             with open(filename, 'r') as f:
                 json_data = json.load(f)
                 data.update(json_data)
-            print 'loaded json cache successfully:', len(data['events']), 'events -', len(data['emissions']), 'emissions'
+            print '*** loaded json cache successfully:', len(data['events']), 'events -', len(data['emissions']), 'emissions'
         except IOError:
-            print 'json file \"', filename, '\" does not exist. starting with no cached data. will create json cache file and save data there.'
+            print '*** json file \"', filename, '\" does not exist. starting with no cached data. will create json cache file and save data there.'
             data['events'] = []
             data['emissions'] = []
+    else:
+        print '*** starting from scratch with no cache'
+        data['events'] = []
+        data['emissions'] = []
 
 def writeJsonFile(data, filename = False):
     if filename:
-        print 'attempting to update json cache file'
+        print '*** updating json cache file:', filename
         with open(filename, 'w') as f:
             json.dump(data, f)
 
@@ -170,8 +177,8 @@ def main():
     th_tags = base_soup.find_all('th')
     tr_tags = base_soup.find_all('tr')
     #dev setting to only deal with a few results. remove the following line for prod (910 links to follow... takes a very long time to follow each event link)
-    print 'max_events is:', args.max_events
     if args.max_events > 0:
+        print '*** max_events is:', args.max_events
         tr_tags = tr_tags[1:args.max_events + 1]
     else:
         tr_tags = tr_tags[1:]
@@ -184,36 +191,36 @@ def main():
 
     #store events in list of dicts
     #get this full list no matter the cached event data. true time cost is getting emission data, not events
-    print 'grabbing all events from base url'
+    print '*** grabbing all events from base url'
     all_events = getTable(th_tags, tr_tags, t_event = True)
 
     #find new events by tracking number that don't exist in the loaded json events data
-    print 'finding new events based on saved cache data'
+    print '*** finding new events based on saved cache data'
     new_events = getUniqueNewEvents(data['events'], all_events)
 
     #store emissions in their own list of dicts
     new_emissions = []
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
-    print 'grabbing new emissions data based on new events'
+    print '*** grabbing new emissions data based on new events'
     getAllEmissions(new_events, new_emissions)
 
     #merge all new data into main stored data
-    data['events'] = data['events'] + new_events
-    data['emissions'] = data['emissions'] + new_emissions
+    data['events'] += new_events
+    data['emissions'] += new_emissions
 
     #write all data to json cache file
     writeJsonFile(data, args.json)
 
     #final output - either csv or a pprint example
     if args.csv:
-        print 'writing all data to CSVs'
+        print '*** writing all data to CSVs'
         writeCSV(data['events'], args.csv, t_event = True)
         writeCSV(data['emissions'], args.csv, t_emissions = True)
     else:
-        print 'no CSV file given... printing first 3 events as a sample'
+        print '*** no CSV file given... printing first 3 events as a sample'
         pprint(data['events'][:3])
 
-    print 'DONE!'
+    print '*** DONE!'
 
 if __name__== "__main__":
     main()
