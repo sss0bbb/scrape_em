@@ -10,14 +10,15 @@ Scrape data from a site that is difficult to use. This is written for a very spe
 
 ## Usage
 
-`python scrape_em.py -u <url>`
-
 `python scrape_em.py -h` for full options
+
+## Examples
+
+`python scrape_em.py --url 'https://myfavoritesite.com' --max 5 --csv 5_results --load data.json`
 
 ## To Do
 
 1. display progress
-2. locally cache results? json?
-3. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
-4. get as most data from each page as possible
+2. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
+3. save as much data from each page as possible
 
