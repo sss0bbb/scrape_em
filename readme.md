@@ -18,7 +18,6 @@ Scrape data from a site that is difficult to use. This is written for a very spe
 
 ## To Do
 
-1. display progress
-2. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
-3. save as much data from each page as possible
+1. give option for config file definition of args. cmd line can get crowded quickly, especially with long urls
+2. save as much data from each page as possible
 
