@@ -119,13 +119,6 @@ def getTNlist(events):
         tnlist.append(event['TrackingNum'])
     return tnlist
 
-def getuniqueTNs(tnlist1, tnlist2):
-    uniquetns = []
-    for tn in tnlist1:
-        if tn in tnlist2:
-            uniquetns.append(tn)
-    return uniquetns
-
 def getUniqueNewEvents(de_events, new_events):
     u_new_events = []
     de_tnlist = getTNlist(de_events)
@@ -156,7 +149,6 @@ def writeJsonFile(data, filename = False):
         print '*** updating json cache file:', filename
         with open(filename, 'w') as f:
             json.dump(data, f)
-
 
 def main():
     args = parseArgs()
