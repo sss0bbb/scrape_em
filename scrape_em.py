@@ -131,6 +131,14 @@ def getuniqueTNs(tnlist1, tnlist2):
             uniquetns.append(tn)
     return uniquetns
 
+def getUniqueNewEvents(de_tnlist, new_events):
+    u_new_events = []
+    ne_tnlist = getTNlist(new_events)
+    for event in new_events:
+        if event['TrackingNum'] not in de_tnlist:
+            u_new_events.append(event)
+    return u_new_events
+
 def main():
     args = parseArgs()
     base_url = args.url
@@ -174,10 +182,10 @@ def main():
     #   if there is no emissions data for a tracking number, download it normally
     #keep it simple
 
-    data['emissions'] = []
+    new_emissions = []
 
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
-    getAllEmissions(data['events'], data['emissions'])
+    getAllEmissions(data['events'], new_emissions)
 
 
     #with open('event_data.json', 'r') as f:
