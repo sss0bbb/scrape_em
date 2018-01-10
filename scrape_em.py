@@ -118,6 +118,19 @@ def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
         for row in ldicts:
             writer.writerow(row)
 
+def getTNlist(events):
+    tnlist = []
+    for event in events:
+        tnlist.append(event['TrackingNum'])
+    return tnlist
+
+def getuniqueTNs(tnlist1, tnlist2):
+    uniquetns = []
+    for tn in tnlist1:
+        if tn in tnlist2:
+            uniquetns.append(tn)
+    return uniquetns
+
 def main():
     args = parseArgs()
     base_url = args.url
@@ -160,18 +173,11 @@ def main():
     #   if emissinos data contains tracking number, do nothing
     #   if there is no emissions data for a tracking number, download it normally
     #keep it simple
+
     data['emissions'] = []
 
     #iterate through events and grab extra info (cause, emissions sources and contaminants)
     getAllEmissions(data['events'], data['emissions'])
-
-    '''
-    #exploring the usefulness of json storage for this project
-    events_json = json.dumps(events)
-    pprint(events_json)
-    '''
-
-
 
 
     #with open('event_data.json', 'r') as f:
