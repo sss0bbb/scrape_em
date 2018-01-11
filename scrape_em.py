@@ -39,7 +39,7 @@ def getRow(td_tags, fields, t_event = False):
         fieldnum += 1
     return row_dict
 
-def getTable(th_tags, tr_tags, t_event = False, t_emissions = False):
+def getTable(th_tags, tr_tags, t_event = False, t_emissions = False, t_event_d = False):
     all_rows = []
     fields = getFields(th_tags, t_event)
     for tr in tr_tags:
@@ -48,10 +48,18 @@ def getTable(th_tags, tr_tags, t_event = False, t_emissions = False):
         all_rows.append(new_row)
     return all_rows
 
-def getCause(event_soup):
-    cause_header = event_soup.find('th', text = 'Cause')
-    cause = cause_header.parent.find_next('td').get_text()
-    return cause
+def getEventDetails(ed_thtags):
+    ed_dict = {}
+    for th in ed_thtags:
+        ed_dict[th.get_text().strip()] = th.find_next('td').get_text().strip()
+    ed_dict['Event began:'] = cleanDateTime(ed_dict['Event began:'])
+    ed_dict['Event ended:'] = cleanDateTime(ed_dict['Event ended:'])
+    return ed_dict
+
+def cleanDateTime(s):
+    date = s[:s.find(' ')]
+    time = ''.join(s[s.find(' '):].split())
+    return date + ' ' + time
 
 def getEmission(tracknum, h3s, emissions):
     #loop through emissions labeled as "Source" in h3 tags followed by tables of contaminants
@@ -69,12 +77,10 @@ def getEmission(tracknum, h3s, emissions):
             emission_th_tags = h3.next_sibling.find_all('th')
             emission_tr_tags = h3.next_sibling.find_all('tr')[1:]
             emission_list = getTable(emission_th_tags, emission_tr_tags, t_emissions = True)
+            for e in emission_list:
+                e.update(emission)
             pprint(emission_list)
             emissions += emission_list
-            #for e in emission_list:
-                #emission.update(e)
-            #pprint(emission)
-            #emissions.append(emission)
 
 def getAllEmissions(events, emissions):
     count = 1
@@ -83,7 +89,8 @@ def getAllEmissions(events, emissions):
         print '*** grabbing all emissions data for ', count, 'of', len(events), 'events'
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
-        event[u'Cause'] = getCause(event_soup)
+        ed_thtags = ed_thtags = event_soup.find('table').find_all('th')
+        event.update(getEventDetails(ed_thtags))
         h3_tags = event_soup.find_all('h3', text = re.compile("Source"))
         getEmission(event['TrackingNum'], h3_tags, emissions)
         count += 1
