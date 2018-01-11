@@ -104,7 +104,8 @@ def writeCSV(ldicts, csvfile, t_event = False, t_emissions = False):
         csvfile = csv_basename + '_events.csv'
         #suggested
         #header = [u'TrackingNum', u'Regulated Entity Number', u'RNNum', u'City', u'County', u'Type', u'Event Begin', u'Event End', u'Basis', u'Cause', u'Action Taken', u'Estimation Method']
-        header = [u'TrackingNum', u'Type', u'Status', u'Cause', u'Began', u'Ended', u'URL']
+        #header = [u'TrackingNum', u'Type', u'Status', u'Cause', u'Began', u'Ended', u'URL']
+        header = [u'TrackingNum', u'Type', u'Status', u'Began', u'Ended', u'URL', u'Regulated entity name', u'Physical location', u'Regulated entity RN number', u'City, County', u'Type(s) of air emissions event:', u'This is based on the:', u'Event began:', u'Event ended:', u'Cause', u'Action taken', u'Emissions estimation method']
         #todo: compare header to ldicts[0] to make sure that the contents are the same even if they're in a different order
         #   ValueError thrown when header doesn't match - use try instead
     elif t_emissions:
@@ -205,8 +206,11 @@ def main():
     #final output - either csv or a pprint example
     if args.csv:
         print '*** writing all data to CSVs'
-        writeCSV(data['events'], args.csv, t_event = True)
-        writeCSV(data['emissions'], args.csv, t_emissions = True)
+        try:
+            writeCSV(data['events'], args.csv, t_event = True)
+            writeCSV(data['emissions'], args.csv, t_emissions = True)
+        except:
+            print '*** failure in writing CSVs'
     else:
         print '*** no CSV file given... printing first 3 events and first 3 emissions as a sample'
         pprint(data['events'][:3])
