@@ -69,19 +69,18 @@ def getEmission(tracknum, h3s, emissions):
             emission_th_tags = h3.next_sibling.find_all('th')
             emission_tr_tags = h3.next_sibling.find_all('tr')[1:]
             emission_list = getTable(emission_th_tags, emission_tr_tags, t_emissions = True)
-            #pprint(emission_list)
-            #e_count = 1
-            for e in emission_list:
-                emission.update(e)
-                #e_count += 1
-            pprint(emission)
-            emissions.append(emission)
+            pprint(emission_list)
+            emissions += emission_list
+            #for e in emission_list:
+                #emission.update(e)
+            #pprint(emission)
+            #emissions.append(emission)
 
 def getAllEmissions(events, emissions):
     count = 1
     for event in events:
         #pprint(event)
-        print '*** grabbing', count, 'of', len(events)
+        print '*** grabbing all emissions data for ', count, 'of', len(events), 'events'
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
         event[u'Cause'] = getCause(event_soup)
@@ -202,8 +201,9 @@ def main():
         writeCSV(data['events'], args.csv, t_event = True)
         writeCSV(data['emissions'], args.csv, t_emissions = True)
     else:
-        print '*** no CSV file given... printing first 3 events as a sample'
+        print '*** no CSV file given... printing first 3 events and first 3 emissions as a sample'
         pprint(data['events'][:3])
+        pprint(data['emissions'][:3])
 
     print '*** DONE!'
 
