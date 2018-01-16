@@ -86,7 +86,7 @@ def getAllEmissions(events, emissions):
     count = 1
     for event in events:
         #pprint(event)
-        print '*** grabbing all emissions data for ', count, 'of', len(events), 'events'
+        print '*** grabbing all emissions data for', count, 'of', len(events), 'events'
         event_page = requests.get(event['URL'])
         event_soup = BeautifulSoup(event_page.content, 'html.parser')
         ed_thtags = ed_thtags = event_soup.find('table').find_all('th')
